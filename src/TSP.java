@@ -3,7 +3,79 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.Random;
 import java.util.function.BiFunction;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+class DrawLines extends JFrame {
+    private static double[] x;
+    private static double[] y;
+    public static int[] rooting;
 
+    public DrawLines(double[] x, double[] y) {
+        this.x = new double[x.length];
+        this.y = new double[y.length];
+        double x_mean = 0;
+        double y_mean = 0;
+        for(int i=0;i<x.length;i++){
+            x_mean += x[i]/38;
+            y_mean += y[i]/38;
+        }
+        x_mean = x_mean/(x.length*1.5);
+        y_mean = y_mean/(y.length*2);
+        for(int i=0;i<x.length;i++){
+            this.x[i] = (x[i]/38)-x_mean;
+            this.y[i] = (y[i]/38)-y_mean;
+        }
+        
+        initUI();
+    }
+
+    private void initUI() {
+        setTitle("Draw Lines");
+        setSize(400, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+    }
+    @Override
+    public void paint(Graphics g) {
+        
+        super.paint(g);
+        
+        for (int i = 0; i < x.length - 1; i++) {
+            int x1 = (int) x[rooting[i]];
+            int y1 = (int) y[rooting[i]];
+            int x2 = (int) x[rooting[i+1]];
+            int y2 = (int) y[rooting[i+1]];
+            g.drawLine(x1, y1, x2, y2);
+        }
+        int x1 = (int) x[rooting[rooting.length-1]];
+        int y1 = (int) y[rooting[rooting.length-1]];
+        int x2 = (int) x[rooting[0]];
+        int y2 = (int) y[rooting[0]];
+        g.drawLine(x1, y1, x2, y2);
+            
+    }
+   
+
+    public void updateDrawing(int[] rooting) {
+        this.rooting = rooting;
+        repaint();
+    }
+
+    public void exit(int[] rooting) {
+        SwingUtilities.invokeLater(() -> {
+          
+            
+            this.rooting = rooting;
+            repaint();
+            setVisible(true);
+
+            
+        });
+    }
+}
 
 public class TSP {
     static Random init_rand = new Random();
@@ -13,7 +85,7 @@ public class TSP {
         static int Max_num;
         //1世代あたりの個体数
         static int Num_ind = 20;
-        static int Elite_num = 1;
+        static int Elite_num = 3;
         static int iteration = 10000;
         
         static int[][] individual;
@@ -22,14 +94,14 @@ public class TSP {
         static double[] y;
         static int[][] Elite;
     public static void main(String[] args){
-        System.out.println(seed);
+        
         DataLoad();
         individual = new int[Num_ind][Max_num];
         childern = new int[Num_ind][Max_num];
         Elite = new int[Elite_num][Max_num];
+        DrawLines drawLines = new DrawLines(x, y);
         
-
-
+        int[] rooting = new int[Max_num];
         Generate_init();
         double dist[] = calc_dist();
         System.out.println("Generation0:");
@@ -40,14 +112,14 @@ public class TSP {
             System.out.print(":"+dist[i]);
             System.out.println();
         }
-
+        double min = Double.MAX_VALUE;
         for(int roop=0;roop<iteration;roop++){
-            System.out.println("Generation"+(roop+1)+":");
+            
             int[][] combination = choice_ind(dist);;
         
-            for(int i=0;i<combination.length;i++){
-                System.out.println(combination[i][0]+","+combination[i][1]);
-            }
+            // for(int i=0;i<combination.length;i++){
+            //     System.out.println(combination[i][0]+","+combination[i][1]);
+            // }
             
             Elite_choice(dist);
             EXcross(combination);
@@ -56,25 +128,56 @@ public class TSP {
             dist = calc_dist();
             execution(dist);
             
-            
-            for(int i=0;i<Num_ind;i++){
+            if(roop%10 == 9)
+            {
+                System.out.println("Generation"+(roop+1)+":");
+                for(int i=0;i<Num_ind;i++){
+                
                 for(int j=0;j<Max_num;j++){
                     System.out.print(individual[i][j]+",");
                 }   
                 System.out.print(":"+dist[i]);
                 System.out.println();
+            }}
+
+                for(int z=0;z<Max_num;z++){
+                    rooting[z] = Elite[0][z];
+                }
+
+                //drawLines.updateDrawing(rooting);
+                
+                // else{
+                //     drawLines.kakikae(rooting);
+                    
+                    
+                // }
+            if(roop==0){
+                drawLines.exit(rooting);
+                
             }
+            
+            else if(dist[0]<min){
+                min = dist[0];
+                drawLines.repaint();
+            }
+            
+    
+                
+                
+            
+            
         }
-
         
-
+        
+        System.out.println("min:"+dist[0]);
+        System.out.println(seed);
     }
 
     public static void mutation(){
         int temp = 0;
         for(int i=0;i<Num_ind;i++){
             for(int j=0;j<Max_num;j++){
-                if(rand.nextDouble()<0.05){
+                if(rand.nextDouble()<0.2){
                     temp = individual[i][j];
                     int ex_mutation = rand.nextInt(Max_num);
                     individual[i][j] = individual[i][ex_mutation];
@@ -85,7 +188,7 @@ public class TSP {
     }
 
     public static void DataLoad(){
-        String filePath = "C:\\Users\\maedalab20233\\Documents\\GitHub\\GeneticAlgoritm\\src\\WesternSaharaPlot.txt";
+        String filePath = "C:\\Users\\Owner\\Documents\\GitHub\\GeneticAlgoritm\\src\\WesternSaharaPlot.txt";
         try {
             Scanner scanner = new Scanner(new File(filePath));
             // ファイル内の行数を取得
@@ -530,6 +633,8 @@ public class TSP {
                 dist[i] += Math.sqrt(Math.pow(x[individual[i][j]]-x[individual[i][j+1]],2)+Math.pow(y[individual[i][j]]-y[individual[i][j+1]],2));
                 
             }
+
+            dist[i] += Math.sqrt(Math.pow(x[individual[i][Max_num-1]]-x[individual[i][0]],2)+Math.pow(y[individual[i][Max_num-1]]-y[individual[i][0]],2));
             
             
         }

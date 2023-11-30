@@ -5,7 +5,8 @@ import java.io.PrintWriter;
 import java.util.Locale;
 import java.util.Random;
 import java.util.function.BiFunction;
-
+import javax.swing.*;
+import java.awt.*;
 public class GeneticAlgolithm {
     static Random rand = new Random();
     //遺伝子の大きさ
